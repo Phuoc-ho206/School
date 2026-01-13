@@ -1,13 +1,13 @@
-# File biên dịch
-*.exe
+
+# Build files
 *.o
 *.out
 
-# Thư mục build
-build/
+# Ignore all exe
+*.exe
 
-# Cấu hình VS Code
-.vscode/
+# Ignore auto commit script (chắc chắn)
+auto_commit.bat
 
-# File tạm
-*.log
+# Ignore all bat
+*.bat
