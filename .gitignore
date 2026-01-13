@@ -11,3 +11,5 @@ auto_commit.bat
 
 # Ignore all bat
 *.bat
+#Ignore .vscode
+*.vscode
