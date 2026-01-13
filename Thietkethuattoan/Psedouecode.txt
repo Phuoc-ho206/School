@@ -1,0 +1,79 @@
+
+
+DP:
+    INPUT: n, cost[0..n-1][0..n-1]
+
+    max_mask ← 1 << n
+    FOR mask ← 0 TO max_mask - 1
+        FOR u ← 0 TO n - 1
+            dp[mask][u] ← ∞
+
+    dp[1 << 0][0] ← 0
+
+    FOR mask ← 0 TO max_mask - 1
+        FOR u ← 0 TO n - 1
+            IF u ∈ mask THEN
+                FOR v ← 0 TO n - 1
+                    IF v ∉ mask THEN
+                        newmask ← mask OR (1 << v)
+                        IF dp[newmask][v] > dp[mask][u] + cost[u][v] THEN
+                            dp[newmask][v] ← dp[mask][u] + cost[u][v]
+                            parent[newmask][v] ← u
+
+    min_cost ← ∞
+    FOR i ← 1 TO n - 1
+        min_cost ← min(min_cost, dp[full_mask][i] + cost[i][0])
+
+    OUTPUT min_cost và lộ trình tương ứng.
+
+Backtracking:
+
+Thuật toán BACKTRACKING(currCity, pos, cost)
+    Nếu cost ≥ min_cost thì
+        Trả về
+
+    Nếu pos = n thì
+        cost ← cost + Cost[currCity][0]
+        Nếu cost < min_cost thì
+            min_cost ← cost
+            bestpath ← currpath + [0]
+        Trả về
+
+    Với mỗi địa điểm i từ 1 đến n-1
+        Nếu visited[i] = false thì
+            visited[i] ← true
+            currpath ← currpath + [i]
+            BACKTRACKING(i, pos + 1, cost + Cost[currCity][i])
+            currpath ← bỏ i
+            visited[i] ← false
+
+Greedy:
+
+INPUT: n, C[0..n-1][0..n-1]
+
+visited[0..n-1] ← false
+path ← empty
+cost ← 0
+
+curr ← 0
+visited[0] ← true
+path.push(0)
+
+FOR k ← 1 TO n - 1
+    minCost ← ∞
+    next ← -1
+    FOR i ← 0 TO n - 1
+        IF visited[i] = false AND C[curr][i] < minCost THEN
+            minCost ← C[curr][i]
+            next ← i
+    visited[next] ← true
+    cost ← cost + C[curr][next]
+    curr ← next
+    path.push(curr)
+
+cost ← cost + C[curr][0]
+path.push(0)
+
+OUTPUT cost, path
+
+
