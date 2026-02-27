@@ -1,0 +1,320 @@
+DIJKSTRA(adj[][], s, t, n):
+    // Khởi tạo
+    create array pre[n+1] ← -1
+    create array dist[n+1] ← 1e9
+    create priority_queue pq (min-heap storing {distance, vertex})
+    
+    dist[s] ← 0
+    pq.push({0, s})
+    
+    // Thuật toán chính
+    while pq is not empty:
+        pair<int,int> q ← pq.top()
+        u ← q.second
+        kc ← q.first
+        pq.pop()
+        
+        // Bỏ qua nếu đã xử lý với khoảng cách tốt hơn
+        if kc > dist[u]:
+            continue
+        
+        // Duyệt các đỉnh kề
+        for each pair<v, len> in adj[u]:
+            if dist[v] > len + dist[u]:
+                dist[v] ← dist[u] + len
+                pq.push({dist[v], v})
+                pre[v] ← u
+    
+    // Kiểm tra có đường đi không
+    if dist[t] == 1e9:
+        print "No path"
+        return
+    
+    // Truy vết đường đi
+    create array path
+    current ← t
+    while current != -1:
+        path.push_back(current)
+        current ← pre[current]
+    
+    // Đảo ngược để có đường đi từ s → t
+    reverse(path)
+    
+    print "dist[" + t + "] = " + dist[t]
+    print path with "->" separator
+    
+    return path
+
+// Hàm kiểm tra input
+CHECK_INPUT(u, v, w):
+    do:
+        if w < 0:
+            print "Nhap lai trong so:"
+        input u, v, w
+    while w < 0
+
+/*--------------------------------------------------------------------------------------------------------------------------*/
+FLOYD_WARSHALL(a[][], n):
+    // Thuật toán chính - 3 vòng lặp lồng nhau
+    for k = 0 to n-1:                    // Xét đỉnh trung gian k
+        for i = 0 to n-1:                // Xét đỉnh nguồn i
+            for j = 0 to n-1:            // Xét đỉnh đích j
+                // Cập nhật khoảng cách
+                a[i][j] ← min(a[i][j], a[i][k] + a[k][j])
+    
+    return a
+
+MAIN():
+    create matrix a[100][100]
+    input n                              // Số đỉnh
+    
+    // Nhập ma trận kề
+    for i = 0 to n-1:
+        for j = 0 to n-1:
+            input a[i][j]
+    
+    // Chạy thuật toán
+    FLOYD_WARSHALL(a, n)
+    
+    // In kết quả
+    for i = 0 to n-1:
+        for j = 0 to n-1:
+            print a[i][j] + " "
+        print newline
+
+/*---------------------------------------------------------------------------------------------------------------------------*/
+
+
+// Cấu trúc dữ liệu
+class Graph:
+    int V                                    // Số đỉnh
+    vector<vector<pair<int,int>>> adj       // Danh sách kề {đỉnh, trọng số}
+
+class SubGraph:
+    vector<int> nodes                        // Các đỉnh trong cụm
+    vector<int> gateways                     // Các đỉnh cổng
+
+// Hàm Dijkstra - trả về {dist, pre}
+DIJKSTRA(G, s):
+    create dist[G.V+1] ← 1e9
+    create pre[G.V+1] ← -1
+    create priority_queue pq                 // Min-heap {dist, vertex}
+    
+    dist[s] ← 0
+    pq.push({0, s})
+    
+    while pq is not empty:
+        {d, u} ← pq.top()
+        pq.pop()
+        
+        if d > dist[u]:
+            continue
+        
+        for each {v, w} in G.adj[u]:
+            if dist[v] > dist[u] + w:
+                dist[v] ← dist[u] + w
+                pre[v] ← u
+                pq.push({dist[v], v})
+    
+    return {dist, pre}
+
+// Chia đồ thị thành k cụm
+CHIACUM(G, k):
+    create array clusters[k]
+    
+    // Phân chia đỉnh vào cụm
+    for u = 1 to G.V:
+        index ← u % k
+        clusters[index].nodes.push_back(u)
+    
+    // Xác định gateway
+    for c = 0 to k-1:
+        for each u in clusters[c].nodes:
+            for each {v, w} in G.adj[u]:
+                if v % k != c:                // v thuộc cụm khác
+                    clusters[c].gateways.push_back(u)
+                    break
+    
+    return clusters
+
+// Xây dựng đồ thị rút gọn chỉ chứa gateway
+REDUCEGRAPH(G, clusters, newindex):
+    create Graph R
+    R.V ← 0
+    
+    // Đánh số lại các gateway
+    for each C in clusters:
+        for each g in C.gateways:
+            newindex[g] ← ++R.V
+    
+    R.adj.resize(R.V + 1)
+    
+    // Thêm cạnh giữa các gateway
+    for each C in clusters:
+        for each u in C.gateways:
+            for each {v, w} in G.adj[u]:
+                if newindex contains v:      // v cũng là gateway
+                    u2 ← newindex[u]
+                    v2 ← newindex[v]
+                    R.adj[u2].push_back({v2, w})
+    
+    return R
+
+// Tìm gateway tốt nhất từ đỉnh x
+FIND_BESTGATEWAY(clusters, distInside, x, k):
+    min_dist ← 1e9
+    best_gateway ← -1
+    
+    for each g in clusters[x % k].gateways:
+        dist ← distInside[{x % k, g}][x]
+        if dist < min_dist:
+            min_dist ← dist
+            best_gateway ← g
+    
+    return best_gateway
+
+// Truy vết đường đi
+GETPATH(pre, x):
+    create path
+    while x != -1:
+        path.push_back(x)
+        x ← pre[x]
+    reverse(path)
+    return path
+
+// Thuật toán chính - Chia để trị
+DIVIDE_AND_CONQUER(G, s, t, k):
+    // Bước 1: Chia cụm
+    clusters ← CHIACUM(G, k)
+    
+    // Bước 2: Tính khoảng cách nội cụm
+    create map distInside                    // {(cụm, gateway) → dist[]}
+    
+    for i = 0 to k-1:
+        for each g in clusters[i].gateways:
+            {dist, pre} ← DIJKSTRA(G, g)
+            distInside[{i, g}] ← dist
+    
+    // Bước 3: Xử lý trường hợp cùng cụm
+    if s % k == t % k:
+        {dist, pre} ← DIJKSTRA(G, s)
+        path ← GETPATH(pre, t)
+        return path
+    
+    // Bước 4: Xử lý trường hợp khác cụm
+    // 4.1: Tìm gateway tốt nhất
+    best_gateway_s ← FIND_BESTGATEWAY(clusters, distInside, s, k)
+    best_gateway_t ← FIND_BESTGATEWAY(clusters, distInside, t, k)
+    
+    // 4.2: Tính đường đi s → best_gateway_s
+    {dist_s, pre_s} ← DIJKSTRA(G, s)
+    path_s ← GETPATH(pre_s, best_gateway_s)
+    
+    // 4.3: Tính đường đi best_gateway_t → t
+    {dist_t, pre_t} ← DIJKSTRA(G, best_gateway_t)
+    path_t ← GETPATH(pre_t, t)
+    
+    // 4.4: Xây dựng đồ thị rút gọn và tìm đường giữa gateway
+    create map newindex
+    R ← REDUCEGRAPH(G, clusters, newindex)
+    
+    new_best_s ← newindex[best_gateway_s]
+    new_best_t ← newindex[best_gateway_t]
+    
+    {dist_mid, pre_mid} ← DIJKSTRA(R, new_best_s)
+    path_mid ← GETPATH(pre_mid, new_best_t)
+    
+    // Chuyển đổi index về ban đầu
+    create map oldindex
+    for each {old, new} in newindex:
+        oldindex[new] ← old
+    
+    for i = 0 to length(path_mid)-1:
+        path_mid[i] ← oldindex[path_mid[i]]
+    
+    // 4.5: Ghép 3 đoạn đường
+    create fullpath
+    
+    // Thêm path_s (bỏ đỉnh cuối)
+    for i = 0 to length(path_s)-2:
+        fullpath.push_back(path_s[i])
+    
+    // Thêm path_mid (bỏ đỉnh cuối)
+    for i = 0 to length(path_mid)-2:
+        fullpath.push_back(path_mid[i])
+    
+    // Thêm path_t (đầy đủ)
+    for i = 0 to length(path_t)-1:
+        fullpath.push_back(path_t[i])
+    
+    return fullpath
+
+MAIN():
+    input n, m, k                            // Số đỉnh, cạnh, cụm
+    
+    create Graph G
+    G.V ← n
+    G.adj.resize(n + 1)
+    
+    // Nhập đồ thị
+    for i = 0 to m-1:
+        CHECK_INPUT(u, v, w)                 // Kiểm tra w >= 0
+        G.adj[u].push_back({v, w})
+        G.adj[v].push_back({u, w})           // Đồ thị vô hướng
+    
+    // Chạy thuật toán
+    path ← DIVIDE_AND_CONQUER(G, 1, 2, k)
+    
+    // In kết quả
+    for i = 0 to length(path)-1:
+        if i > 0: print "->"
+        print path[i]
+
+
+
+DIJKSTRA(adj[][], s, t, n):
+    // Khởi tạo
+    tạo mảng pre[n+1] ← -1
+    tạo mảng dist[n+1] ← 1e9
+    tạo priority_queue pq (min-heap lưu {khoảng cách, đỉnh})
+    dist[s] ← 0
+    pq.push({0, s})
+    // Thuật toán chính
+    trong khi pq không rỗng:
+        q ← pq.top()
+        u ← q.second
+        kc ← q.first
+        pq.pop()
+        
+        // Bỏ qua nếu đã xử lý với khoảng cách tốt hơn
+        nếu kc > dist[u]:
+            continue
+        
+        // Duyệt các đỉnh kề
+        với mỗi cặp {v, len} trong adj[u]:
+            nếu dist[v] > len + dist[u]:
+                dist[v] ← dist[u] + len
+                pq.push({dist[v], v})
+                pre[v] ← u
+    // Kiểm tra có đường đi không
+    nếu dist[t] == 1e9:
+        in "No path"
+        return
+    // Truy vết đường đi
+    tạo mảng path
+    current ← t
+    trong khi current != -1:
+        path.push_back(current)
+        current ← pre[current]
+    // Đảo ngược để có đường đi từ s → t
+    reverse(path)
+    in "dist[" + t + "] = " + dist[t]
+    in path với dấu phân cách "->"
+    return path
+// Hàm kiểm tra đầu vào
+CHECK_INPUT(u, v, w):
+    lặp:
+        nếu w < 0:
+            in "Nhập lại trọng số:"
+        nhập u, v, w
+    cho đến khi w >= 0
